@@ -1,42 +1,28 @@
-const WebSocket = require('ws');
-const { WebcastPushConnection } = require('tiktok-live-connector');
+import { WebSocketServer } from "ws";
+import { TikTokConnection } from "tiktok-live-connector";
 
-// TikTok Benutzername hier eintragen
-const tiktokUsername = "DEIN_TIKTOK_NAME"; // <--- HIER ANPASSEN!
+const tiktokUsername = "01minclips";
+const wss = new WebSocketServer({ port: 8080 });
+let connection = new TikTokConnection(tiktokUsername);
 
-// WebSocket-Server auf Port 8080 starten
-const wss = new WebSocket.Server({ port: 8080 });
-let clients = [];
-
-// TikTok Verbindung starten
-const tiktokConnection = new WebcastPushConnection(tiktokUsername);
-
-tiktokConnection.connect().then(() => {
-  console.log(`✅ Verbunden mit TikTok Benutzer: @${tiktokUsername}`);
-}).catch(err => {
-  console.error("❌ Verbindung zu TikTok fehlgeschlagen:", err);
+wss.on("connection", function (ws) {
+  console.log("WebSocket verbunden");
 });
 
-// Auf neue WebSocket-Clients warten
-wss.on('connection', ws => {
-  clients.push(ws);
-  console.log("🟢 Client verbunden");
-
-  ws.on('close', () => {
-    clients = clients.filter(c => c !== ws);
-    console.log("🔴 Client getrennt");
-  });
+connection.connect().then(() => {
+  console.log(`Verbunden mit TikTok-Stream: ${tiktokUsername}`);
 });
 
-// Nur GALAXY-Geschenke verarbeiten
-tiktokConnection.on('gift', data => {
-  if (data.giftName.toLowerCase().includes("galaxy")) {
-    const message = JSON.stringify({
+connection.on("gift", (data) => {
+  if (data.giftId === 5655) {
+    const message = {
       user: data.uniqueId,
-      count: data.repeatCount || 1,
-      avatar: data.profilePictureUrl
+      avatar: data.profilePictureUrl,
+      count: data.repeatCount,
+    };
+    wss.clients.forEach((client) => {
+      client.send(JSON.stringify(message));
     });
-    clients.forEach(ws => ws.send(message));
-    console.log("✨ Galaxy gesendet von:", data.uniqueId);
+    console.log("Galaxy empfangen:", message);
   }
 });
