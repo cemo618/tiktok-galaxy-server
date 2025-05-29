@@ -1,8 +1,13 @@
 import { WebSocketServer } from "ws";
 import { TikTokConnection } from "tiktok-live-connector";
 
+// TikTok Username
 const tiktokUsername = "01minclips";
-const wss = new WebSocketServer({ port: 8080 });
+
+// 👉 Nutze dynamischen Port (für Render)
+const PORT = process.env.PORT || 8080;
+const wss = new WebSocketServer({ port: PORT });
+
 let connection = new TikTokConnection(tiktokUsername);
 
 wss.on("connection", function (ws) {
@@ -10,7 +15,7 @@ wss.on("connection", function (ws) {
 });
 
 connection.connect().then(() => {
-  console.log(`Verbunden mit TikTok-Stream: ${tiktokUsername}`);
+  console.log(`✅ Verbunden mit TikTok-Stream: ${tiktokUsername}`);
 });
 
 connection.on("gift", (data) => {
@@ -23,6 +28,6 @@ connection.on("gift", (data) => {
     wss.clients.forEach((client) => {
       client.send(JSON.stringify(message));
     });
-    console.log("Galaxy empfangen:", message);
+    console.log("🌌 Galaxy empfangen:", message);
   }
 });
